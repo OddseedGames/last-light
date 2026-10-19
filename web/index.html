@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#09100e">
+  <meta name="description" content="Последний луч: ночной зомби-шутер на Rust. Вращай фонарь, держи зомби в свете и не стой на месте.">
+  <title>Последний луч · OddseedGames</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2309100e'/%3E%3Cpath d='m8 21 15-14q9 11 0 17Z' fill='%23e8ba66'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><span class="brand"><b>✳</b> oddseed<span>games</span></span><span class="edition">PLAY LAB / ЭКСПЕРИМЕНТ 002</span></header>
+  <main>
+    <div class="game-frame">
+      <canvas id="glcanvas" tabindex="0" aria-label="Последний луч. Enter начать, WASD двигаться, мышь или Q и E поворачивать фонарь, левая кнопка мыши или пробел стрелять, R перезарядить, Escape пауза, M звук."></canvas>
+      <output id="game-status" class="sr-only" aria-live="off">Загрузка игры.</output>
+      <div id="loading" role="status"><span class="lamp">◉</span><strong>Проверяем фонарь</strong><span>Там, за светом, уже кто-то есть.</span></div>
+      <div id="load-error" role="alert" hidden><strong>Не удалось включить фонарь</strong><p>Для игры нужны WebGL и WebAssembly. Обнови страницу или открой её в настольном Chrome.</p><button onclick="location.reload()">Попробовать снова</button></div>
+    </div>
+    <p class="hint">Для игры нужны клавиатура и мышь. Нажми Enter, чтобы начать. <button id="fullscreen">На весь экран</button></p>
+  </main>
+  <footer><span>МАЛЕНЬКИЕ ИГРЫ. ЛЮБОПЫТНЫЕ ЭКСПЕРИМЕНТЫ.</span><span>Создано с помощью ИИ · OddseedGames © 2026</span></footer>
+  <script src="mq_js_bundle.js"></script>
+  <script>
+    const timer = setTimeout(showLoadError, 30000);
+    function showLoadError() {
+      clearTimeout(timer);
+      document.querySelector('#loading').hidden = true;
+      document.querySelector('#load-error').hidden = false;
+    }
+    miniquad_add_plugin({
+      name: 'last_light_lifecycle', version: 1,
+      register_plugin(imports) {
+        imports.env.last_light_ready = () => {
+          clearTimeout(timer);
+          document.querySelector('#loading').hidden = true;
+          document.documentElement.classList.add('game-ready');
+          document.querySelector('canvas').focus();
+        };
+        imports.env.last_light_status = (phase, elapsed, kills, health, ammo, reload, x, y, angle, visible, fired) => {
+          const status = document.querySelector('#game-status');
+          Object.assign(status.dataset, {phase, elapsed, kills, health, ammo, reload, x, y, angle, visible, fired});
+          status.value = `${['Ожидание', 'Игра', 'Пауза', 'Поражение'][phase]}. Время ${Math.floor(elapsed)} сек. Убито ${kills}. Здоровье ${health}. Патроны ${ammo}.`;
+        };
+      }
+    });
+    function pause() {
+      if (typeof wasm_exports !== 'undefined' && wasm_exports.last_light_pause) wasm_exports.last_light_pause();
+    }
+    document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+    window.addEventListener('blur', pause);
+    window.addEventListener('error', showLoadError);
+    window.addEventListener('unhandledrejection', showLoadError);
+    document.querySelector('#fullscreen').addEventListener('click', async () => {
+      const frame = document.querySelector('.game-frame');
+      if (frame.requestFullscreen) {
+        try { await frame.requestFullscreen(); } catch (error) { console.warn(error); }
+      }
+      document.querySelector('canvas').focus();
+    });
+    document.querySelector('canvas').addEventListener('contextmenu', event => event.preventDefault());
+    load('last-light.wasm');
+  </script>
+</body>
+</html>

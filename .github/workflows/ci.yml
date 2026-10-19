@@ -71,8 +71,8 @@ jobs:
             ~/.cargo/git
             target
           key: wasm-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
-      - name: Fetch WASM dependencies
-        run: cargo fetch --locked --target wasm32-unknown-unknown
+      - name: Fetch locked dependencies
+        run: cargo fetch --locked
       - name: Build game and verify offline package
         run: ./scripts/build.sh
       - name: Install browser test dependencies
